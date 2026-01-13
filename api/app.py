@@ -1,78 +1,37 @@
 from flask import Flask, request
-import sqlite3
-import subprocess
 import hashlib
-import os
+import subprocess
 
 app = Flask(__name__)
-
-SECRET_KEY = "dev-secret-key-12345"  # Hardcoded secret
-
-
-@app.route("/login", methods=["POST"])
+# Mot de passe en dur (mauvaise pratique)
+ADMIN_PASSWORD = "123456"
+# Cryptographie faible (MD5)
+def hash_password(password):
+     return hashlib.md5(password.encode()).hexdigest()
+@app.route("/login")
 def login():
-    username = request.json.get("username")
-    password = request.json.get("password")
+     username = request.args.get("username")
+     password = request.args.get("password")
 
-    conn = sqlite3.connect("users.db")
-    cursor = conn.cursor()
-
-    query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
-    cursor.execute(query)
-
-    result = cursor.fetchone()
-    if result:
-        return {"status": "success", "user": username}
-
-    return {"status": "error", "message": "Invalid credentials"}
-
-
-@app.route("/ping", methods=["POST"])
+# Authentification faible
+     if username == "admin" and hash_password(password) ==hash_password(ADMIN_PASSWORD):
+           return "Logged in"
+     return "Invalid credentials"
+@app.route("/ping")
 def ping():
-    host = request.json.get("host", "")
-    cmd = f"ping -c 1 {host}"
-    output = subprocess.check_output(cmd, shell=True)
+    host = request.args.get("host", "localhost")
 
-    return {"output": output.decode()}
-
-
-@app.route("/compute", methods=["POST"])
-def compute():
-    expression = request.json.get("expression", "1+1")
-    result = eval(expression)  # CRITIQUE
-    return {"result": result}
-
-
-@app.route("/hash", methods=["POST"])
-def hash_password():
-    pwd = request.json.get("password", "admin")
-    hashed = hashlib.md5(pwd.encode()).hexdigest()
-    return {"md5": hashed}
-
-
-@app.route("/readfile", methods=["POST"])
-def readfile():
-    filename = request.json.get("filename", "test.txt")
-    with open(filename, "r") as f:
-        content = f.read()
-
-    return {"content": content}
-
-
-@app.route("/debug", methods=["GET"])
-def debug():
-    # Renvoie des détails sensibles -> mauvaise pratique
-    return {
-        "debug": True,
-        "secret_key": SECRET_KEY,
-        "environment": dict(os.environ)
-    }
-
-
-@app.route("/hello", methods=["GET"])
+# Injection de commande (shell=True)
+    result = subprocess.check_output(
+         f"ping -c 1 {host}",
+         shell=True
+    )
+    return result
+@app.route("/hello")
 def hello():
-    return {"message": "Welcome to the DevSecOps vulnerable API"}
-
-
+     name = request.args.get("name", "user")
+     # XSS potentiel
+     return f"<h1>Hello {name}</h1>"
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+# Debug activé
+     app.run(debug=True)
