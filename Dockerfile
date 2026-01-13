@@ -2,7 +2,7 @@ FROM python:3.9
 
 WORKDIR /app
 
-COPY ../api .
+COPY api/ .       
 
 RUN pip install flask
 
