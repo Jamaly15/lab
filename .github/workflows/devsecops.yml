@@ -19,6 +19,12 @@ jobs:
       - uses: actions/checkout@v3
 
       ############################################
+      # Vérifier les fichiers présents
+      ############################################
+      - name: List repo contents
+        run: ls -R
+
+      ############################################
       # 1. Analyse SAST CodeQL
       ############################################
       - name: Init CodeQL
@@ -42,7 +48,7 @@ jobs:
       # 3. Build Docker
       ############################################
       - name: Build Docker image
-        run: docker build -t devsecops-api .
+        run: docker build -t devsecops-api -f Dockerfile .
 
       ############################################
       # 4. Scan Docker avec Trivy
